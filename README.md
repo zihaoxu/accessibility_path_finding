@@ -33,4 +33,5 @@ pip install matplotlib pandas sklearn seaborn numpy osmnx
 brew install spatialindex
 ```
 
-This installs the Python packages that we will be using in the workshop.
+## To run code
+
