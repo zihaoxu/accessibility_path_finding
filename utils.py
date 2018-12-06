@@ -6,34 +6,74 @@ import osmnx as ox
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
+# galbal paths
 dataset_path = '../0-datasets/'
 raw_path = dataset_path + 'raw/'
 mst_path = dataset_path + 'mst/'
 
-# Helper functions
+# unit conversions
+lat_to_m = 111 * 1000
+lng_to_m = 111.3 * 1000
+
+# david's api key
+apikey = "AIzaSyDk4njF9iZ4zYOYLm54eqExvEYaICH-Zes"
+
+# helper functions
 def show_str_unique(series):
-	series = series.apply(lambda x: str(x))
-	return series.value_counts()
+    ''' show the unique occurances of each line, as a string'''
+    series = series.apply(lambda x: str(x))
+    return series.value_counts()
 
 def get_path_coords(path_str):
+    ''' get the coordinates from the strange LINESTRING (...) format of the edges dataset '''
     path_str = path_str.replace("LINESTRING (", "").replace(")", "")
     coord_pairs = path_str.split(", ")
     coord_pairs = [[float(i) for i in a.split(" ")] for a in coord_pairs]
     return [i[0] for i in coord_pairs], [i[1] for i in coord_pairs]
 
-def process_edge_rows(edge, idx):
-    y,x = get_path_coords(edge.loc[idx, 'geometry'])
+def get_path_length(df, idx):
+    ''' return length of a path segment for given index in clean_edge dataset '''
+    y_start, y_end, x_start, x_end = df.loc[idx, 'y_start'], df.loc[idx, 'y_end'], df.loc[idx, 'x_start'], df.loc[idx, 'x_end']
+    y_diff_m = abs(y_start - y_end) * lat_to_m
+    x_diff_m = abs(x_start - x_end) * lng_to_m
+    return np.sqrt(y_diff_m ** 2 + x_diff_m ** 2)
+
+def process_edge_csv_rows(df, idx):
+    ''' process the geometry column of the edges column.
+        return the y_start, y_end, x_start, x_end, highway, oneway, index '''
+    y,x = get_path_coords(df.loc[idx, 'geometry'])
     y_start = [y[i] for i in range(len(x) - 1)]
     y_end = [y[i+1] for i in range(len(x) - 1)]
     x_start = [x[i] for i in range(len(x) - 1)]
     x_end = [x[i+1] for i in range(len(x) - 1)]
     return y_start, y_end, x_start, x_end, \
-           [edge.loc[idx, 'highway']] * (len(x)-1), [edge.loc[idx, 'oneway']] * (len(x)-1),\
+           [df.loc[idx, 'highway']] * (len(x)-1), [df.loc[idx, 'oneway']] * (len(x)-1),\
            [idx] * (len(x)-1)
 
+def break_up_edges_to_nodes(df, idx, seg_length):
+    ''' break up long edges in clean_edge into small segments with nodes 
+        returns a dataframe '''
+    if df.loc[idx, 'length'] < seg_length * 2:
+        return df[df.index == idx]
+    n_segments = df.loc[idx, 'length'] // seg_length + 1
+    ys = list(np.linspace(df.loc[idx, 'y_start'], df.loc[idx, 'y_end'], n_segments))
+    xs = list(np.linspace(df.loc[idx, 'x_start'], df.loc[idx, 'x_end'], n_segments))
+    res = defaultdict(list)
+    res['y_start'] += ys[:-1]
+    res['y_end'] += ys[1:]
+    res['x_start'] += xs[:-1]
+    res['x_end'] += xs[1:]
+    res['highway'] += [df.loc[idx, 'highway']] * (len(xs)-1)
+    res['oneway'] += [df.loc[idx, 'oneway']] * (len(xs)-1)
+    res['edge_index'] += [df.loc[idx, 'edge_index']] * (len(xs)-1)
+    res = pd.DataFrame(res)
+    res['length'] = [get_path_length(res, i) for i in range(len(res))]
+    return res
 
-def visualize_path(edge, idx, scale_factor = 0.1):
-    x,y = get_path_coords(edge.loc[idx, 'geometry'])
+
+def visualize_path(df, idx, scale_factor = 0.1):
+    ''' visualize a path in edges df based on the index '''
+    x,y = get_path_coords(df.loc[idx, 'geometry'])
     plt.scatter(x,y)
     diff_x = max(x) - min(x)
     diff_y = max(y) - min(y)
@@ -42,7 +82,7 @@ def visualize_path(edge, idx, scale_factor = 0.1):
     plt.show()
 
 def get_elevation(lat, lng):
-    apikey = "AIzaSyDk4njF9iZ4zYOYLm54eqExvEYaICH-Zes"
+    ''' Get the elevation using Google evelation API for a given lat, lng pair '''
     url = "https://maps.googleapis.com/maps/api/elevation/json"
     request = requests.get(url+"?locations="+str(lat)+","+str(lng)+"&key="+apikey)
     try:
@@ -58,7 +98,7 @@ def get_elevation(lat, lng):
         print('JSON decode failed: '+str(request) + str(e))
 
 def get_elevation_path(s_lat, s_lng, e_lat, e_lng, seg_length):
-    apikey = "AIzaSyDk4njF9iZ4zYOYLm54eqExvEYaICH-Zes"
+    ''' Get the elevation along a path using Google evelation API '''
     url = "https://maps.googleapis.com/maps/api/elevation/json"
     length = np.sqrt(abs(s_lat - e_lat) ** 2 + abs(s_lng - e_lng) ** 2)
     print(length)
