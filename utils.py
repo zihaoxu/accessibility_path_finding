@@ -1,4 +1,4 @@
-import json, requests
+import json, requests, pickle
 import pandas as pd 
 import numpy as np
 import seaborn as sns
@@ -83,11 +83,12 @@ def visualize_path(df, idx, scale_factor = 0.1):
 
 def get_elevation(lat, lng):
     ''' Get the elevation using Google evelation API for a given lat, lng pair '''
+    lat, lng = float(lat), float(lng)
     url = "https://maps.googleapis.com/maps/api/elevation/json"
     request = requests.get(url+"?locations="+str(lat)+","+str(lng)+"&key="+apikey)
     try:
         results = json.loads(request.text).get('results')
-        print(results)
+        # print(results)
         if 0 < len(results):
             elevation = results[0].get('elevation')
             return elevation
@@ -101,8 +102,6 @@ def get_elevation_path(s_lat, s_lng, e_lat, e_lng, seg_length):
     ''' Get the elevation along a path using Google evelation API '''
     url = "https://maps.googleapis.com/maps/api/elevation/json"
     length = np.sqrt(abs(s_lat - e_lat) ** 2 + abs(s_lng - e_lng) ** 2)
-    print(length)
-    pass
     samples = np.sqrt(abs(s_lat - e_lat) ** 2 + abs(s_lng - e_lng) ** 2) // seg_length
     request = requests.get(url+"?path="+str(s_lat)+","+str(s_lng)+"|"+str(e_lat)+","+str(e_lng)+"&samples="+str(samples)+"&key="+apikey)
     try:
@@ -116,3 +115,11 @@ def get_elevation_path(s_lat, s_lng, e_lat, e_lng, seg_length):
             return 0
     except ValueError as e:
         print('JSON decode failed: '+str(request) + str(e))
+
+# algorithm related functions
+def find_neighbors(nodes, edges, y, x):
+    ''' find the neighbors of a given y,x coordinates within the edges dataset '''
+    ends = edges[(edges['y_start'] == y) & (edges['x_start'] == x)][['y_end', 'x_end']].values
+    starts = edges[(edges['y_end'] == y) & (edges['x_end'] == x)][['y_start', 'x_start']].values
+    return set([nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in starts] +\
+               [nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in ends])
