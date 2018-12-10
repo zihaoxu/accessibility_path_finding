@@ -116,10 +116,28 @@ def get_elevation_path(s_lat, s_lng, e_lat, e_lng, seg_length):
     except ValueError as e:
         print('JSON decode failed: '+str(request) + str(e))
 
-# algorithm related functions
 def find_neighbors(nodes, edges, y, x):
     ''' find the neighbors of a given y,x coordinates within the edges dataset '''
     ends = edges[(edges['y_start'] == y) & (edges['x_start'] == x)][['y_end', 'x_end']].values
     starts = edges[(edges['y_end'] == y) & (edges['x_end'] == x)][['y_start', 'x_start']].values
     return set([nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in starts] +\
                [nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in ends])
+
+# algorithm related functions
+def return_neighbors(neighbors, idx):
+	return neighbors[idx]
+
+# Usage
+with open('neighbors.pickle', 'rb') as f:
+    neighbors = pickle.load(f)
+ns = return_neighbors(neighbors, idx)
+print(ns)
+
+def return_index(nodes, x, y):
+	return nodes[nodes['x'] == x, nodes['y'] == y].index.value
+# E.g.
+return_index(nodes, '34.0987426', '-117.7030676')
+
+
+
+
