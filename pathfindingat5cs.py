@@ -65,6 +65,8 @@ def check_dominance(heuristic1, heuristic2):
 def path_selection(open_list, nodeCosts):
 	if len(open_list) == 1:
 		node_info = open_list.pop(0)
+        nodeCosts[node_info[0]][0].remove((n_dist, n_ele))
+        nodeCosts[node_info[0]][1].append((n_dist, n_ele))
 		return node_info, open_list, nodeCosts
 	else:
 	# 1. Select set of paths from open_list that is not dominated
@@ -73,7 +75,7 @@ def path_selection(open_list, nodeCosts):
 			candidate_list = prune_list(candidate_list, open_list[i])
 			# If all elements in open_list are dominated, dom_node becomes the single new element
 			if len(open_list) == 0:
-				open_list = [dom_node]
+				open_list = [open_list[i]]
 		# Return the node with the smallest euclidean distance so far:
 		node_info = candidate_list[0]
 		for i in range(1, len(candidate_list)):
@@ -113,10 +115,10 @@ def backtrack(goal_list, COSTS, best_costs):
 #   Input: give index
 #   Output: indices of the neighbor(s)
 
-# start: x, y coordinate
-# end: x, y coordinate
+# start: node index within the dataframe
+# end: node index within the dataframe
 
-# OUTPUT: set of paths with COSTS and edges/nodes
+# OUTPUT: set of vertices along the path with COSTS
 
 # MULTIOBJECTIVE A* SEARCH
 # Input: dataframe
@@ -126,20 +128,23 @@ def backtrack(goal_list, COSTS, best_costs):
 def astar(dataframe, start, goal):
 
     # 1. Create
+    # Get the coordiantes of start, goal
+    start_coord = get_node_coords(start)
+    goal_coord = get_node_coords(goal)
     # Initialize list of alternatives triple(n, g , F(n,g))
     open_list = [(start, \
-    	         (0,0), \
-                 (euclidean_distance(start, goal), elevation(start, goal)))]
-    best_costs = {start: (0, start)}
+                  (0,0), \
+                  (euclidean_distance(start_coord, goal_coord), \
+                   elevation(start_coord, goal_coord)))]
 
     # Initialize two empty sets
     GOALN = []
     COSTS = [] # potentially dictionary of nodes with costs
 
     # Dictionary -- mapping nodes to Gop(n) && Gcl(n)
-    nodeCosts = {
-        start: ([(0,0)],[], None)
-    }
+    G_open = {start: [(0,0)]}
+    G_close = {start: []}
+    best_costs = {(start, [0,0]): None}
 
     # 2. Check Termination (skipped, at the end)
     # if OPEN is empty, then backtrack in SG from the nodes in GOALN
@@ -155,9 +160,9 @@ def astar(dataframe, start, goal):
 
         # 4. Solution Recording
         # If n is goal, then
-        if n == goal:
+        if node == goal:
             # Include n in GOALN and gn in COSTS
-            GOALN += [n]
+            GOALN += [node]
             COSTS += [(n_dist, n_ele)]
             # Eliminate from open_list all alternatives (x, gx, Fx) 
             # such that all vectors in Fx are dominated by gn (FILTERING)
@@ -169,14 +174,15 @@ def astar(dataframe, start, goal):
             # For all successors nodes m of n that do not produce cycles in SG do:
             for neighbor in return_neighbors(node):
                 # (a) Calculate the cost of the new path found to m: gm = gn + c(n,m)
-                get_node_coords(node)
-                get_node_coords(neighbor)
-                next_dist = n_dist + euclidean_distance(node, neighbor)
-                next_ele = n_ele + elevation(node, neighbor)
+                node_coord = get_node_coords(node)
+                neighbor_coord = get_node_coords(neighbor)
+                next_dist = n_dist + euclidean_distance(node_coord, neighbor_coord)
+                next_ele = n_ele + elevation(node_coord, neighbor_coord)
                 # (b) If m is a new node
                 if neighbor not in open_list:
                     # i. Calculate Fm = F (m, gm) filtering estimates dominated by COSTS
-                    F_dist, F_ele = next_dist + euclidean_distance(neighbor, goal), next_ele + elevation(neighbor, goal)
+                    F_dist, F_ele = next_dist + euclidean_distance(neighbor_coord, goal_coord), \
+                                    next_ele + elevation(neighbor_coord, goal_coord)
                     # ii. If Fm is not empty, put (m, gm, Fm) in OPEN,
                     #  and put gm in Gop(m) labelling a pointer to n
                     open_list[neighbor] = (neighbor, (next_dist, next_ele), (F_dist, F_ele))
