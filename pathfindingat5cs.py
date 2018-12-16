@@ -60,14 +60,14 @@ def check_dominance(heuristic1, heuristic2):
 
 # Selects a path to explore next -- pick a nondominated value
 # Input: open_list of values
-#        nodeCosts (Gop & Gcl from write up)
-# Output: a item from open_list, updated open_list, updated nodeCosts
-def path_selection(open_list, nodeCosts):
+#        G_open, G_close (Gop & Gcl from write up)
+# Output: a item from open_list, updated open_list, updated G_open, G_close
+def path_selection(open_list, G_open, G_close):
 	if len(open_list) == 1:
 		node_info = open_list.pop(0)
-        nodeCosts[node_info[0]][0].remove((n_dist, n_ele))
-        nodeCosts[node_info[0]][1].append((n_dist, n_ele))
-		return node_info, open_list, nodeCosts
+        G_open[node_info[0]].remove((n_dist, n_ele))
+        G_close[node_info[0]].append((n_dist, n_ele))
+		return node_info, open_list, G_open, G_close
 	else:
 	# 1. Select set of paths from open_list that is not dominated
 		candidate_list = [open_list[0]]
@@ -84,10 +84,10 @@ def path_selection(open_list, nodeCosts):
 				node_info = (n, (n_dist, n_ele), (n_dist_heu, n_ele_heu))
 		# Remove the selected node
 		open_list.remove(node_info)
-		# Update nodeCosts: remove (n_dist, n_ele) from Gop and move to Gcl
-		nodeCosts[node_info[0]][0].remove((n_dist, n_ele))
-		nodeCosts[node_info[0]][1].append((n_dist, n_ele))
-		return node_info, open_list, nodeCosts
+		# Update: remove (n_dist, n_ele) from Gop and move to Gcl
+		G_open[node_info[0]].remove((n_dist, n_ele))
+		G_close[node_info[0]].append((n_dist, n_ele))
+		return node_info, open_list, G_open, G_close
 
 # Check if dom_node dominates any of the things in open_list, if yes, update
 # Input: open_list, dom_node
@@ -102,10 +102,41 @@ def prune_list(open_list, dom_node):
 			del open_list[i]
 	return open_list
 
-# TODO: Backtracks through graph from nodes in goal_list
-# Output: the set of solution paths with costs in COSTS
-def backtrack(goal_list, COSTS, best_costs):
-    pass
+# Check if dom_heu dominates any of the things in g_list[neighbor], if yes, update
+# Input: g_list (Gopen or Gclose), neighbor, dom_heu (the )
+# Output: the updated open_list
+def prune_list_open_close(g_list, neighbor, dom_heu):
+    # Extract h1 from dom_heu
+    dh1, dh2 = dom_heu
+    # Go through each element in open_list, delete if dominated by dom_node
+    for i in range(len(g_list[neighbor])):
+        h1, h2 = g_list[neighbor][i]
+        if check_dominance((h1, h2), (dh1, dh2)):
+            del g_list[neighbor][i]
+    # If all the things are deleted, add dom_heu to g_list[neighbor]:
+    if len(g_list[neighbor]) == 0:
+        g_list[neighbor].append(dom_heu)
+    return g_list
+
+# Backtracks through graph from nodes in goal_list
+# Input: The recorded set of prev_nodes to the goal and the corresponding costs,
+#        G_close, recorded best_costs, start node
+# Output: the list of solution paths with costs in COSTS
+def backtrack(GOALN, COSTS, G_close, best_costs, start):
+    all_paths = []
+    for i in range(len(GOALN)):
+        node = GOALN[i]
+        node_cost = COSTS[i]
+        prev_node = best_costs[node, node_cost]
+        path = [prev_node]
+        while prev_node != start:
+            # Get the selected cost of the previous node
+            temp_cost = G_close[prev_node]
+            temp_node = best_costs[prev_node, temp_cost]
+            path += [temp_node] 
+            prev_node = temp_node
+        all_paths.append(path)
+    return all_paths
 
 # ------ END: Helper functions -------
 
@@ -155,7 +186,7 @@ def astar(dataframe, start, goal):
     while open_list:
         # Select the nondominated (n, gn, F) from open_list, breaking tie by smallest n_dist
         # Done in path_selection -- Delete (n, gn, F) from OPEN, and move gn from Gop(n) go Gcl(n)
-        node_info, open_list, nodeCosts = path_selection(open_list, nodeCosts)
+        node_info, open_list, G_open, G_close, best_costs = path_selection(open_list, G_open, G_close, best_costs)
         (node, (n_dist, n_ele), (n_dist_heu, n_ele_heu)) = node_info
 
         # 4. Solution Recording
@@ -179,34 +210,54 @@ def astar(dataframe, start, goal):
                 next_dist = n_dist + euclidean_distance(node_coord, neighbor_coord)
                 next_ele = n_ele + elevation(node_coord, neighbor_coord)
                 # (b) If m is a new node
-                if neighbor not in open_list:
+                if neighbor not in [l[0] for l in open_list]:
                     # i. Calculate Fm = F (m, gm) filtering estimates dominated by COSTS
                     F_dist, F_ele = next_dist + euclidean_distance(neighbor_coord, goal_coord), \
                                     next_ele + elevation(neighbor_coord, goal_coord)
                     # ii. If Fm is not empty, put (m, gm, Fm) in OPEN,
-                    #  and put gm in Gop(m) labelling a pointer to n
-                    open_list[neighbor] = (neighbor, (next_dist, next_ele), (F_dist, F_ele))
-                    nodeCosts[neighbor] = ([(next_dist, next_ele)],[], node)
+                    if not any([check_dominance((F_dist, F_ele), (h1,h2)) for h1,h2 in COSTS]):
+                        #  and put gm in Gop(m) labelling a pointer to n
+                        open_list.append((neighbor, (next_dist, next_ele), (F_dist, F_ele)))
+                        G_open[neighbor] = [(next_dist, next_ele)]
+                        G_close[neighbor] = []
+                        best_costs[(neighbor, (next_dist, next_ele))] = node
                     # iii. Go to step 2 (skipped)
                 # else (m is not a new node), in case
                 else:
                     # 1. gm is in Gop(m) or gm is in Gcl(m):
-                    if (next_dist, next_ele) in nodeCosts[neighbor][0] or (next_dist, next_ele) in nodeCosts[neighbor][1]:
-
+                    if (next_dist, next_ele) in G_open[neighbor] or (next_dist, next_ele) in G_close[neighbor]:
                         # label with gm a pointer to n
-                        nodeCosts[neighbor][2] += node
-                        # Go to step 2
+                        best_costs[neighbor, (next_dist, next_ele)] = node
+                        # Go to step 2 (skipped)
                     # TODO: 2. If gm is non-dominated by any cost vectors in Gop(m) U Gcl(m)
-                    # (a path to m with new cost had been found), then:
+                    dom = True
+                    for (h1,h2) in G_close[neighbor] + G_open[neighbor]:
+                        # if anything is G_close[neighbor] + G_open[neighbor] dominates next_dist, next_ele,
+                        # set dom = False
+                        if check_dominance((next_dist, next_ele), (h1, h2)):
+                            dom = False
+                    # If next_dist, next_ele dominates everything, 
+                    # i.e. a path to m with new cost had been found, then:
+                    if dom:
                         # i. Eliminate from Gop(m) and Gcl(m) vectors dominated by gm
+                        G_open = prune_list_open_close(G_open, neighbor, (next_dist, next_ele))
+                        G_close = prune_list_open_close(G_close, neighbor, (next_dist, next_ele))
                         # ii. Calculate Fm = F(m, gm) filtering estimates dominated by COSTS
-                        # iii. If Fm is not empty, put (m, gm, Fm) in open_list, and put gm in Gop(m) labelling a pointer to n.
+                        F_dist, F_ele = next_dist + euclidean_distance(neighbor_coord, goal_coord), \
+                                        next_ele + elevation(neighbor_coord, goal_coord)
+                        # iii. If Fm is not empty, put (m, gm, Fm) in open_list, and put gm in Gop(m) 
+                        # labelling a pointer to n.
+                        if not any([check_dominance((F_dist, F_ele), (h1,h2)) for h1,h2 in COSTS]):
+                            #  and put gm in Gop(m) labelling a pointer to n
+                            open_list.append((neighbor, (next_dist, next_ele), (F_dist, F_ele)))
+                            G_open[neighbor] += [(next_dist, next_ele)]
+                            best_costs[(neighbor, (next_dist, next_ele))] = node
                         # iv. Go to step 2 (skipped)
 
                     # 3. Otherwise: go to step 2 (skipped)
     # TODO: Implement backtracking if goal is found -- then return set of solutions, else return error
     if len(GOALN) > 0:
-        return backtrack(GOALN, COSTS, best_costs)
+        return backtrack(GOALN, COSTS, G_close, best_costs, start)
     else:
     	print("No path found!")
     	return None
