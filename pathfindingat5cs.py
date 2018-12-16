@@ -1,13 +1,19 @@
-import math, time
+import math, time, pickle
 import numpy as np
+import pandas as pd
+
+# Galbal paths
+dataset_path = '0-datasets/'
+raw_path = dataset_path + 'raw/'
+mst_path = dataset_path + 'mst/'
 
 # Unit Conversions
 lat_to_m = 111 * 1000
 lng_to_m = 111.3 * 1000
 
 # Load in necessary files
-nodes = pd.read_csv(mst_path + 'clean_node.csv')
-with open('neighbors.pickle', 'rb') as f:
+nodes_df = pd.read_csv(mst_path + 'clean_node.csv')
+with open(mst_path + 'neighbors.pickle', 'rb') as f:
     neighbors = pickle.load(f)
 
 # ------ START: HELPER FUNCTIONS -------
@@ -46,9 +52,9 @@ def return_neighbors(neighbors, idx):
 # Input: nodes dataframe, index
 # Output: x,y,z coords of node with that index
 def get_node_coords(nodes_df, index):
-	return float(nodes_df.loc[index, 'x']), \
-	       float(nodes_df.loc[index, 'y']), \
-	       float(nodes_df.loc[index, 'elevation'])
+    return float(nodes_df.loc[index, 'x']), \
+           float(nodes_df.loc[index, 'y']), \
+           float(nodes_df.loc[index, 'elevation'])
 
 # Check if heuristic2 dominates heuristic1
 # Input: two sets of heuristic values
@@ -63,31 +69,31 @@ def check_dominance(heuristic1, heuristic2):
 #        G_open, G_close (Gop & Gcl from write up)
 # Output: a item from open_list, updated open_list, updated G_open, G_close
 def path_selection(open_list, G_open, G_close):
-	if len(open_list) == 1:
-		node_info = open_list.pop(0)
+    if len(open_list) == 1:
+        node_info = open_list.pop(0)
         G_open[node_info[0]].remove((n_dist, n_ele))
         G_close[node_info[0]].append((n_dist, n_ele))
-		return node_info, open_list, G_open, G_close
-	else:
-	# 1. Select set of paths from open_list that is not dominated
-		candidate_list = [open_list[0]]
-		for i in range(1, len(open_list)):
-			candidate_list = prune_list(candidate_list, open_list[i])
-			# If all elements in open_list are dominated, dom_node becomes the single new element
-			if len(open_list) == 0:
-				open_list = [open_list[i]]
-		# Return the node with the smallest euclidean distance so far:
-		node_info = candidate_list[0]
-		for i in range(1, len(candidate_list)):
-			(n, (n_dist, n_ele), (n_dist_heu, n_ele_heu)) = candidate_list[i]
-			if n_dist_heu < node_info[2][1]:
-				node_info = (n, (n_dist, n_ele), (n_dist_heu, n_ele_heu))
-		# Remove the selected node
-		open_list.remove(node_info)
-		# Update: remove (n_dist, n_ele) from Gop and move to Gcl
-		G_open[node_info[0]].remove((n_dist, n_ele))
-		G_close[node_info[0]].append((n_dist, n_ele))
-		return node_info, open_list, G_open, G_close
+        return node_info, open_list, G_open, G_close
+    else:
+    # 1. Select set of paths from open_list that is not dominated
+        candidate_list = [open_list[0]]
+        for i in range(1, len(open_list)):
+            candidate_list = prune_list(candidate_list, open_list[i])
+            # If all elements in open_list are dominated, dom_node becomes the single new element
+            if len(open_list) == 0:
+                open_list = [open_list[i]]
+        # Return the node with the smallest euclidean distance so far:
+        node_info = candidate_list[0]
+        for i in range(1, len(candidate_list)):
+            (n, (n_dist, n_ele), (n_dist_heu, n_ele_heu)) = candidate_list[i]
+            if n_dist_heu < node_info[2][1]:
+                node_info = (n, (n_dist, n_ele), (n_dist_heu, n_ele_heu))
+        # Remove the selected node
+        open_list.remove(node_info)
+        # Update: remove (n_dist, n_ele) from Gop and move to Gcl
+        G_open[node_info[0]].remove((n_dist, n_ele))
+        G_close[node_info[0]].append((n_dist, n_ele))
+        return node_info, open_list, G_open, G_close
 
 # Check if dom_node dominates any of the things in open_list, if yes, update
 # Input: open_list, dom_node
@@ -160,8 +166,8 @@ def astar(dataframe, start, goal):
 
     # 1. Create
     # Get the coordiantes of start, goal
-    start_coord = get_node_coords(start)
-    goal_coord = get_node_coords(goal)
+    start_coord = get_node_coords(nodes_df, start)
+    goal_coord = get_node_coords(nodes_df, goal)
     # Initialize list of alternatives triple(n, g , F(n,g))
     open_list = [(start, \
                   (0,0), \
@@ -205,8 +211,8 @@ def astar(dataframe, start, goal):
             # For all successors nodes m of n that do not produce cycles in SG do:
             for neighbor in return_neighbors(node):
                 # (a) Calculate the cost of the new path found to m: gm = gn + c(n,m)
-                node_coord = get_node_coords(node)
-                neighbor_coord = get_node_coords(neighbor)
+                node_coord = get_node_coords(nodes_df, node)
+                neighbor_coord = get_node_coords(nodes_df, neighbor)
                 next_dist = n_dist + euclidean_distance(node_coord, neighbor_coord)
                 next_ele = n_ele + elevation(node_coord, neighbor_coord)
                 # (b) If m is a new node
@@ -259,6 +265,8 @@ def astar(dataframe, start, goal):
     if len(GOALN) > 0:
         return backtrack(GOALN, COSTS, G_close, best_costs, start)
     else:
-    	print("No path found!")
-    	return None
+        print("No path found!")
+        return None
 
+# Test
+astar(nodes_df, 1, 10)
