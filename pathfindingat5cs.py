@@ -96,6 +96,9 @@ def path_selection(open_list, G_open, G_close):
         open_list.remove(node_info)
         # Update: remove (n_dist, n_ele) from Gop and move to Gcl
         (n, (n_dist, n_ele), (n_dist_heu, n_ele_heu)) = node_info
+        # print("(n_dist, n_ele):", (n_dist, n_ele))
+        # print("G_open[node_info[0]]:", G_open[node_info[0]])
+        # print("node_info[0]:", node_info[0])
         G_open[node_info[0]].remove((n_dist, n_ele))
         G_close[node_info[0]].append((n_dist, n_ele))
         return node_info, open_list, G_open, G_close
@@ -224,7 +227,7 @@ def astar(dataframe, start, goal):
                 next_dist = n_dist + euclidean_distance(node_coord, neighbor_coord)
                 next_ele = n_ele + elevation(node_coord, neighbor_coord)
                 # (b) If m is a new node
-                if neighbor not in G_open.keys():
+                if neighbor not in G_close.keys():
                     # i. Calculate Fm = F (m, gm) filtering estimates dominated by COSTS
                     F_dist, F_ele = next_dist + euclidean_distance(neighbor_coord, goal_coord), \
                                     next_ele + elevation(neighbor_coord, goal_coord)
@@ -255,9 +258,9 @@ def astar(dataframe, start, goal):
                     # If next_dist, next_ele dominates everything, 
                     # i.e. a path to m with new cost had been found, then:
                     if dom:
-                        # i. Eliminate from Gop(m) and Gcl(m) vectors dominated by gm
-                        G_open = prune_list_open_close(G_open, neighbor, (next_dist, next_ele))
-                        G_close = prune_list_open_close(G_close, neighbor, (next_dist, next_ele))
+                        # i. Eliminate from Gop(m) and Gcl(m) vectors dominated by gm (skipped)
+                        # G_open = prune_list_open_close(G_open, neighbor, (next_dist, next_ele))
+                        # G_close = prune_list_open_close(G_close, neighbor, (next_dist, next_ele))
                         # ii. Calculate Fm = F(m, gm) filtering estimates dominated by COSTS
                         F_dist, F_ele = next_dist + euclidean_distance(neighbor_coord, goal_coord), \
                                         next_ele + elevation(neighbor_coord, goal_coord)
@@ -267,7 +270,6 @@ def astar(dataframe, start, goal):
                             #  and put gm in Gop(m) labelling a pointer to n
                             open_list.append((neighbor, (next_dist, next_ele), (F_dist, F_ele)))
                             G_open[neighbor].append((next_dist, next_ele))
-                            best_costs[neighbor] = {}
                             best_costs[neighbor][(next_dist, next_ele)] = node
                         # iv. Go to step 2 (skipped)
 
@@ -277,6 +279,7 @@ def astar(dataframe, start, goal):
         all_paths = backtrack(GOALN, COSTS, G_close, best_costs, start)
         print("Found", len(all_paths), "paths from node", start, "to node", goal, ":")
         for i in range(len(all_paths)):
+            print("Path", i, "costs:", COSTS[i])
             print("Path", i, ":", all_paths[i])
         return all_paths
     else:
@@ -284,4 +287,4 @@ def astar(dataframe, start, goal):
         return None
 
 # Test
-astar(nodes_df, 1, 10)
+astar(nodes_df, 1, 1000)
