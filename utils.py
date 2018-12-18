@@ -126,3 +126,20 @@ def find_neighbors(nodes, edges, y, x):
                [nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in ends])
 
 
+# Other functions
+def return_neighbors(neighbors, idx):
+	return neighbors[idx]
+
+# Usage
+with open('neighbors.pickle', 'rb') as f:
+    neighbors = pickle.load(f)
+ns = return_neighbors(neighbors, idx)
+print(ns)
+
+def return_index(nodes, x, y):
+	return nodes[nodes['x'] == x, nodes['y'] == y].index.value
+# Usage
+# return_index(nodes, '34.0987426', '-117.7030676')
+
+
+
