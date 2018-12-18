@@ -164,12 +164,12 @@ def backtrack(GOALN, COSTS, G_close, best_costs, start):
 
 # Loading in the necessary data:
 # Dataframe: x, y, elevation, index (aka row number) -- each row is unique
-nodes_df = pd.read_csv(mst_path + 'clean_node.csv')
+nodes_df = pd.read_csv(mst_path + 'clean_node2.csv')
 nodes_df.index = range(len(nodes_df))
 # Dictionary:
 #   Input: give index
 #   Output: indices of the neighbor(s)
-with open(mst_path + 'neighbors.pickle', 'rb') as f:
+with open(mst_path + 'neighbors2.pickle', 'rb') as f:
     neighbors = pickle.load(f)
 
 # MULTIOBJECTIVE A* SEARCH
