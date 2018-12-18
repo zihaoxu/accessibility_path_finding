@@ -24,7 +24,7 @@ python3 -m pip install jupyter
 
 Jupyter notebook is a tool that allows interactive coding in many languages, including Python. Our workshop will be done in this environment! See this guide if the above commands don't work for you: http://jupyter.org/install.  
 
-4. Install Homebrew by execute in Terminal/Command line: `https://brew.sh/`  
+4. Install Homebrew by following instructions in here: `https://brew.sh/`  
 
 5. Install all the packages by execute in Terminal/Command line:  
 
@@ -33,4 +33,5 @@ pip install matplotlib pandas sklearn seaborn numpy osmnx
 brew install spatialindex
 ```
 
-This installs the Python packages that we will be using in the workshop.
+## To run code
+
