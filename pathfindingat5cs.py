@@ -13,12 +13,6 @@ mst_path = dataset_path + 'mst/'
 lat_to_m = 111 * 1000
 lng_to_m = 111.3 * 1000
 
-# Load in necessary files
-nodes_df = pd.read_csv(mst_path + 'clean_node.csv')
-nodes_df.index = range(len(nodes_df))
-with open(mst_path + 'neighbors.pickle', 'rb') as f:
-    neighbors = pickle.load(f)
-
 # ------ START: HELPER FUNCTIONS -------
 # Heuristic function 1: Euclidean distance between two points
 def euclidean_distance(p1, p2):
@@ -156,21 +150,20 @@ def backtrack(GOALN, COSTS, G_close, best_costs, start):
 
 # ------ END: Helper functions -------
 
-# NOTES:
+# Loading in the necessary data:
 # Dataframe: x, y, elevation, index (aka row number) -- each row is unique
+nodes_df = pd.read_csv(mst_path + 'clean_node.csv')
+nodes_df.index = range(len(nodes_df))
 # Dictionary:
 #   Input: give index
 #   Output: indices of the neighbor(s)
-
-# start: node index within the dataframe
-# end: node index within the dataframe
-
-# OUTPUT: set of vertices along the path with COSTS
+with open(mst_path + 'neighbors.pickle', 'rb') as f:
+    neighbors = pickle.load(f)
 
 # MULTIOBJECTIVE A* SEARCH
 # Input: dataframe
-#        start -- x,y
-#        goal -- x,y
+#        start -- starting node index within the dataframe
+#        goal -- ending node index within the dataframe
 # Output: set of solution paths with costs in COSTS
 def astar(dataframe, start, goal):
 
@@ -287,4 +280,4 @@ def astar(dataframe, start, goal):
         return None
 
 # Test
-astar(nodes_df, 1, 1000)
+astar(nodes_df, 1, 6)
