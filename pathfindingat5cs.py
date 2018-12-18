@@ -5,7 +5,7 @@ import pandas as pd
 ####### Turn list into string and use as key in dict!!!!!!
 
 # Galbal paths
-dataset_path = '0-datasets/'
+dataset_path = '../0-datasets/'
 raw_path = dataset_path + 'raw/'
 mst_path = dataset_path + 'mst/'
 
@@ -141,8 +141,18 @@ def backtrack(GOALN, COSTS, G_close, best_costs, start):
         path = [prev_node, GOALN[i]]
         while prev_node != start:
             # Get the selected cost of the previous node
-            temp_cost = (G_close[prev_node][0][0], G_close[prev_node][0][1]) 
-            temp_node = best_costs[prev_node][temp_cost]
+            # temp_cost = (G_close[prev_node][0][0], G_close[prev_node][0][1])
+            # temp_node = best_costs[prev_node][temp_cost]
+            if i == 0:
+                temp_cost = (G_close[prev_node][0][0], G_close[prev_node][0][1])
+                temp_node = best_costs[prev_node][temp_cost]
+            else:
+                if len(G_close[prev_node]) > 1:
+                    temp_cost = (G_close[prev_node][1][0], G_close[prev_node][1][1])
+                    temp_node = best_costs[prev_node][temp_cost]
+                else:
+                    temp_cost = (G_close[prev_node][0][0], G_close[prev_node][0][1])
+                    temp_node = best_costs[prev_node][temp_cost]
             path.insert(0, temp_node)
             prev_node = temp_node
         all_paths.append(path)
@@ -236,10 +246,10 @@ def astar(dataframe, start, goal):
                 # else (m is not a new node), in case
                 else:
                     # 1. gm is in Gop(m) or gm is in Gcl(m):
-                    if (next_dist, next_ele) in G_open[neighbor] or (next_dist, next_ele) in G_close[neighbor]:
-                        # label with gm a pointer to n
-                        best_costs[neighbor] = {}
-                        best_costs[neighbor][(next_dist, next_ele)] = node
+                    # if (next_dist, next_ele) in G_open[neighbor] or (next_dist, next_ele) in G_close[neighbor]:
+                    #     # label with gm a pointer to n
+                    #     best_costs[neighbor] = {}
+                    #     best_costs[neighbor][(next_dist, next_ele)] = node
                         # Go to step 2 (skipped)
                     # TODO: 2. If gm is non-dominated by any cost vectors in Gop(m) U Gcl(m)
                     dom = True
@@ -253,7 +263,7 @@ def astar(dataframe, start, goal):
                     if dom:
                         # i. Eliminate from Gop(m) and Gcl(m) vectors dominated by gm (skipped)
                         # G_open = prune_list_open_close(G_open, neighbor, (next_dist, next_ele))
-                        # G_close = prune_list_open_close(G_close, neighbor, (next_dist, next_ele))
+                        G_close = prune_list_open_close(G_close, neighbor, (next_dist, next_ele))
                         # ii. Calculate Fm = F(m, gm) filtering estimates dominated by COSTS
                         F_dist, F_ele = next_dist + euclidean_distance(neighbor_coord, goal_coord), \
                                         next_ele + elevation(neighbor_coord, goal_coord)
@@ -270,6 +280,9 @@ def astar(dataframe, start, goal):
     # return set of solutions, else return error
     if len(GOALN) > 0:
         all_paths = backtrack(GOALN, COSTS, G_close, best_costs, start)
+        # Debug:
+        # print(best_costs[2150])
+        # print(G_close[2150])
         print("Found", len(all_paths), "paths from node", start, "to node", goal, ":")
         for i in range(len(all_paths)):
             print("Path", i, "costs:", COSTS[i])
@@ -280,4 +293,4 @@ def astar(dataframe, start, goal):
         return None
 
 # Test
-astar(nodes_df, 1, 6)
+# astar(nodes_df, 1, 1000)
