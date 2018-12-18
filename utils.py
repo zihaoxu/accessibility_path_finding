@@ -1,5 +1,6 @@
-import json, requests, pickle, matplotlib
-matplotlib.use('TkAgg')
+import json, requests, pickle
+# import matplotlib
+# matplotlib.use('TkAgg')
 import pandas as pd 
 import numpy as np
 import seaborn as sns
@@ -12,6 +13,7 @@ from collections import defaultdict
 dataset_path = '../0-datasets/'
 raw_path = dataset_path + 'raw/'
 mst_path = dataset_path + 'mst/'
+export_path = '../4-export/'
 
 # unit conversions
 lat_to_m = 111 * 1000
@@ -72,7 +74,6 @@ def break_up_edges_to_nodes(df, idx, seg_length):
     res['length'] = [get_path_length(res, i) for i in range(len(res))]
     return res
 
-
 def visualize_path(df, idx, scale_factor = 0.1):
     ''' visualize a path in edges df based on the index '''
     x,y = get_path_coords(df.loc[idx, 'geometry'])
@@ -125,21 +126,27 @@ def find_neighbors(nodes, edges, y, x):
     return set([nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in starts] +\
                [nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in ends])
 
+def visualize_found_path(df, all_paths, scale_factor = 0.1):
+    ''' Plot a found path by th astar algorithm '''
+    colors = ['b', 'pink', 'y']
+    fig = plt.figure()
+    for i in range(len(all_paths)):
+        idx = all_paths[i]
+        x,y = df.loc[idx, 'x'], df.loc[idx, 'y']
+        plt.scatter(x,y,c = colors[i], s = 2, label = 'path_'+str(i))
+        diff_x = max(x) - min(x)
+        diff_y = max(y) - min(y)
+        plt.xlim(min(x) - diff_x * scale_factor, max(x) + diff_x * scale_factor)
+        plt.ylim(min(y) - diff_y * scale_factor, max(y) + diff_y * scale_factor)
+    return fig
 
-# Other functions
-def return_neighbors(neighbors, idx):
-	return neighbors[idx]
-
-# Usage
-with open('neighbors.pickle', 'rb') as f:
-    neighbors = pickle.load(f)
-ns = return_neighbors(neighbors, idx)
-print(ns)
-
-def return_index(nodes, x, y):
-	return nodes[nodes['x'] == x, nodes['y'] == y].index.value
-# Usage
-# return_index(nodes, '34.0987426', '-117.7030676')
-
-
-
+def visualize_map(df, scale_factor = 0.1):
+    ''' Plot the entire map '''
+    x,y = df['x'], df['y']
+    fig = plt.figure()
+    plt.scatter(x,y,c = 'k', s = 2, label = 'map')
+    diff_x = max(x) - min(x)
+    diff_y = max(y) - min(y)
+    plt.xlim(min(x) - diff_x * scale_factor, max(x) + diff_x * scale_factor)
+    plt.ylim(min(y) - diff_y * scale_factor, max(y) + diff_y * scale_factor)
+    return fig
