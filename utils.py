@@ -19,6 +19,9 @@ export_path = '../4-export/'
 lat_to_m = 111 * 1000
 lng_to_m = 111.3 * 1000
 
+# Colors
+colors = ['b', 'pink', 'y', 'purple']
+
 # david's api key
 apikey = "AIzaSyDk4njF9iZ4zYOYLm54eqExvEYaICH-Zes"
 
@@ -126,14 +129,14 @@ def find_neighbors(nodes, edges, y, x):
     return set([nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in starts] +\
                [nodes[(nodes['y'] == y) & (nodes['x'] == x)].index.values[0] for y,x in ends])
 
-def visualize_found_path(df, all_paths, scale_factor = 0.1):
+def visualize_found_path(df, all_paths, COSTS, scale_factor = 0.1):
     ''' Plot a found path by th astar algorithm '''
-    colors = ['b', 'pink', 'y']
     fig = plt.figure()
     for i in range(len(all_paths)):
         idx = all_paths[i]
         x,y = df.loc[idx, 'x'], df.loc[idx, 'y']
-        plt.scatter(x,y,c = colors[i], s = 2, label = 'path_'+str(i))
+        plt.scatter(x,y,c = colors[i], s = 2, label = 'path_'+str(i)+" dist:"+str(round(COSTS[i][0], 2))+" ele:"+str(round(COSTS[i][1], 2)))
+        x,y = df['x'], df['y']
         diff_x = max(x) - min(x)
         diff_y = max(y) - min(y)
         plt.xlim(min(x) - diff_x * scale_factor, max(x) + diff_x * scale_factor)

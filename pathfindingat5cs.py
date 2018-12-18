@@ -120,10 +120,12 @@ def prune_list_open_close(g_list, neighbor, dom_heu):
     # Extract h1 from dom_heu
     dh1, dh2 = dom_heu
     # Go through each element in open_list, delete if dominated by dom_node
+    to_delete = []
     for i in range(len(g_list[neighbor])):
         h1, h2 = g_list[neighbor][i]
         if check_dominance((h1, h2), (dh1, dh2)):
-            del g_list[neighbor][i]
+            to_delete.append(i)
+    g_list[neighbor] = [i for i in g_list[neighbor] if i not in to_delete]
     # If all the things are deleted, add dom_heu to g_list[neighbor]:
     if len(g_list[neighbor]) == 0:
         g_list[neighbor].append(dom_heu)
@@ -277,9 +279,15 @@ def astar(dataframe, start, goal):
                         # iv. Go to step 2 (skipped)
 
                     # 3. Otherwise: go to step 2 (skipped)
+    # de-duplicate the COSTS list:
+    COSTS_new = []
+    for i in COSTS:
+        if i not in COSTS_new:
+            COSTS_new.append(i)
+    GOALN = GOALN[:len(COSTS_new)]
     # return set of solutions, else return error
     if len(GOALN) > 0:
-        all_paths = backtrack(GOALN, COSTS, G_close, best_costs, start)
+        all_paths = backtrack(GOALN, COSTS_new, G_close, best_costs, start)
         # Debug:
         # print(best_costs[2150])
         # print(G_close[2150])
@@ -287,7 +295,7 @@ def astar(dataframe, start, goal):
         for i in range(len(all_paths)):
             print("Path", i, "costs:", COSTS[i])
             print("Path", i, ":", all_paths[i])
-        return all_paths
+        return all_paths, COSTS
     else:
         print("No path found!")
         return None
