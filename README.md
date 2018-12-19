@@ -41,6 +41,8 @@ brew install spatialindex
 5. `4-export` stores the output (graphs) corrsponding to notebooks in `3-analysis`.
 6. `pathfindingat5cs.py` store the main multi-objective A* algorithm, and several helper functions used by the main algorithm.
 7. `utils.py` stores all other helper functions used to process files.  
+8. We have included original links to several tutorials we borrowed from within the notebooks.
 
-To see the actual results or start querying paths, run `01-mapping-astar-output.ipynb` within `3-analysis` and change the `start` and `end` to the corresponding indices of actual locations.
+# Demostration
+To see the actual results or start querying paths, run `01-mapping-astar-output.ipynb` within the `3-analysis` folder and change the `start` and `end` to the corresponding indices of actual locations. The outputs should be automatically generated within the notebook.
 
