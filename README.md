@@ -1,5 +1,5 @@
-# accessibility_path_finding
-Accessibility path finding for the Claremont Colleges
+# Accessibility Path Finding
+This project implements a multi-objective A* algorithm for accessibility path finding within the Claremont Colleges.  
 
 # Setup
 ## Create global .gitignore file
@@ -33,5 +33,14 @@ pip install matplotlib pandas sklearn seaborn numpy osmnx
 brew install spatialindex
 ```
 
-## To run code
+# What are the folders?
+1. `0-datasets` stores all of the datasets we have used in this project. Within it, `raw` stores the raw files, while `mst` stores all of the processed and clean files
+2. `1-import` stores jupyter notebooks used to convert the data from their original formats to pandas dataframes.
+3. `2-build` stores jupyter notebooks that build, or wrangle, all of the files from `raw` and output the processed files in the `mst` folder.
+4. `3-analysis` stores the notebooks used for analysis and outputs graphics.
+5. `4-export` stores the output (graphs) corrsponding to notebooks in `3-analysis`.
+6. `pathfindingat5cs.py` store the main multi-objective A* algorithm, and several helper functions used by the main algorithm.
+7. `utils.py` stores all other helper functions used to process files.  
+
+To see the actual results or start querying paths, run `01-mapping-astar-output.ipynb` within `3-analysis` and change the `start` and `end` to the corresponding indices of actual locations.
 
