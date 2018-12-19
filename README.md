@@ -43,6 +43,6 @@ brew install spatialindex
 7. `utils.py` stores all other helper functions used to process files.  
 8. We have included original links to several tutorials we borrowed from within the notebooks.
 
-# Demostration
+# Demonstration
 To see the actual results or start querying paths, run `01-mapping-astar-output.ipynb` within the `3-analysis` folder and change the `start` and `end` to the corresponding indices of actual locations. The outputs should be automatically generated within the notebook.
 
